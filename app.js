@@ -34,6 +34,8 @@ const elements = {
   fontIncrease: document.querySelector("#font-increase"),
   fontSize: document.querySelector("#font-size"),
   themeToggles: [...document.querySelectorAll("[data-theme-toggle]")],
+  installButton: document.querySelector("#install-app"),
+  iosInstallDialog: document.querySelector("#ios-install-dialog"),
 };
 
 let songs = [];
@@ -42,6 +44,8 @@ let activeSection = "todos";
 let currentSong = null;
 let fontSize = DEFAULT_FONT_SIZE;
 let currentTheme = "claro";
+let deferredInstallPrompt = null;
+let isIosInstall = false;
 
 function normalize(value) {
   return String(value ?? "")
@@ -101,6 +105,77 @@ function setTheme(theme, persist = false) {
 function cycleTheme() {
   const nextTheme = THEMES[(THEMES.indexOf(currentTheme) + 1) % THEMES.length];
   setTheme(nextTheme, true);
+}
+
+function isAppInstalled() {
+  return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+}
+
+function isIosDevice() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function configureInstallButton() {
+  if (isAppInstalled()) {
+    elements.installButton.hidden = true;
+    return;
+  }
+
+  isIosInstall = isIosDevice();
+  elements.installButton.hidden = !isIosInstall;
+
+  if (isIosInstall) {
+    elements.installButton.addEventListener("click", () => {
+      if (typeof elements.iosInstallDialog.showModal === "function") {
+        elements.iosInstallDialog.showModal();
+      } else {
+        elements.iosInstallDialog.setAttribute("open", "");
+      }
+    });
+  }
+
+  window.addEventListener("beforeinstallprompt", (event) => {
+    if (isAppInstalled()) return;
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    elements.installButton.hidden = false;
+  });
+
+  elements.installButton.addEventListener("click", async () => {
+    if (isIosInstall || !deferredInstallPrompt) return;
+    const installPrompt = deferredInstallPrompt;
+    deferredInstallPrompt = null;
+    try {
+      await installPrompt.prompt();
+      const { outcome } = await installPrompt.userChoice;
+      if (outcome === "accepted") elements.installButton.hidden = true;
+    } catch (error) {
+      console.error("Não foi possível abrir o prompt de instalação do CANTUS.", error);
+      setStatus("Não foi possível iniciar a instalação. Tente novamente pelo menu do navegador.", true);
+    }
+  });
+
+  window.addEventListener("appinstalled", () => {
+    deferredInstallPrompt = null;
+    elements.installButton.hidden = true;
+  });
+
+  window.matchMedia("(display-mode: standalone)").addEventListener?.("change", (event) => {
+    if (event.matches) elements.installButton.hidden = true;
+  });
+}
+
+async function registerServiceWorker() {
+  if (!("serviceWorker" in navigator)) return;
+  try {
+    const serviceWorkerUrl = new URL("sw.js", document.baseURI);
+    const scope = new URL("./", document.baseURI).pathname;
+    await navigator.serviceWorker.register(serviceWorkerUrl, { scope });
+  } catch (error) {
+    console.error("Não foi possível registrar o service worker do CANTUS.", error);
+    setStatus("O modo offline não pôde ser ativado neste navegador ou endereço.", true);
+  }
 }
 
 function readFavorites() {
@@ -462,6 +537,8 @@ window.addEventListener("storage", (event) => {
 });
 
 async function initialize() {
+  configureInstallButton();
+  void registerServiceWorker();
   updateTheme(readTheme());
   favoriteNumbers = readFavorites();
   fontSize = readFontSize();

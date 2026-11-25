@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f6f7f5">
     <meta name="description" content="Encontre hinos e cânticos do CANTUS por número, título, letra ou assunto.">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="CANTUS">
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="apple-touch-icon" href="./public/icons/apple-touch-icon.png">
     <title>CANTUS — Hinário</title>
     <link rel="stylesheet" href="styles.css">
     <script src="app.js" defer></script>
@@ -17,6 +22,10 @@
       </a>
       <div class="header-tools">
         <span class="header-caption">Hinário digital</span>
+        <button id="install-app" class="install-button" type="button" hidden>
+          <span class="install-icon" aria-hidden="true">↓</span>
+          <span>Instalar App</span>
+        </button>
         <button class="theme-toggle" type="button" data-theme-toggle aria-label="Tema atual: Claro. Toque para alternar.">
           <span class="theme-icon" aria-hidden="true"></span>
           <span class="theme-label">Claro</span>
@@ -99,5 +108,19 @@
     </main>
 
     <footer class="site-footer">CANTUS <span aria-hidden="true">·</span> Hinário digital</footer>
+
+    <dialog id="ios-install-dialog" class="install-dialog" aria-labelledby="ios-install-title">
+      <form method="dialog" class="install-dialog-content">
+        <button class="dialog-close" type="submit" aria-label="Fechar instruções">×</button>
+        <span class="dialog-install-icon" aria-hidden="true">↓</span>
+        <h2 id="ios-install-title">Instale o CANTUS</h2>
+        <p>Adicione o hinário à tela inicial para abrir como um aplicativo e usar mesmo sem internet.</p>
+        <ol>
+          <li>Toque em <strong>Compartilhar</strong> <span class="share-symbol" aria-label="ícone Compartilhar">↑</span> no Safari.</li>
+          <li>Role as opções e escolha <strong>Adicionar à Tela de Início</strong>.</li>
+        </ol>
+        <button class="dialog-confirm" type="submit">Entendi</button>
+      </form>
+    </dialog>
   </body>
 </html>
