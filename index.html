@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f6f7f5">
+    <meta name="description" content="Encontre hinos e cânticos do CANTUS por número, título, letra ou assunto.">
+    <title>CANTUS — Hinário</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#" aria-label="CANTUS — início">
+        <span class="brand-mark" aria-hidden="true">C</span>
+        <span>CANTUS</span>
+      </a>
+      <span class="header-caption">Hinário digital</span>
+    </header>
+
+    <main class="page">
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+      <div id="library-view">
+        <section class="intro" aria-labelledby="page-title">
+          <p class="eyebrow">SEU HINÁRIO</p>
+          <h1 id="page-title">Músicas</h1>
+          <p class="intro-copy">Encontre uma canção para cada momento.</p>
+        </section>
+
+        <nav class="tabs" aria-label="Filtrar músicas por tipo">
+          <button class="tab is-active" type="button" data-section="todos" aria-pressed="true">Todos</button>
+          <button class="tab" type="button" data-section="hino" aria-pressed="false">Hinos</button>
+          <button class="tab" type="button" data-section="cantico" aria-pressed="false">Cânticos</button>
+          <button class="tab" type="button" data-section="favoritos" aria-pressed="false">Favoritos</button>
+        </nav>
+
+        <section class="filters" aria-label="Busca e filtros">
+          <label class="search-box">
+            <span class="search-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Buscar músicas</span>
+            <input id="search" type="search" placeholder="Buscar por número, título ou letra" autocomplete="off">
+            <kbd aria-hidden="true">⌕</kbd>
+          </label>
+          <div class="subject-filter">
+            <label class="visually-hidden" for="subject">Filtrar por assunto</label>
+            <select id="subject" disabled>
+              <option value="">Todos os assuntos</option>
+            </select>
+            <button id="clear-subject" class="clear-filter" type="button" hidden>Limpar filtro</button>
+          </div>
+        </section>
+
+        <div class="results-heading">
+          <h2 id="results-title">Todas as músicas</h2>
+          <span id="results-count" class="results-count" aria-live="polite"></span>
+        </div>
+
+        <section id="results" class="song-list" aria-label="Lista de músicas"></section>
+      </div>
+
+      <section id="reader-view" class="reader-view" aria-label="Leitura da música" hidden>
+        <header class="reader-header">
+          <div class="reader-topline">
+            <a class="reader-back" href="#" aria-label="Voltar para a lista">
+              <span aria-hidden="true">←</span>
+              <span>Lista</span>
+            </a>
+            <div class="reader-heading">
+              <span id="reader-number" class="reader-number"></span>
+              <h1 id="reader-title"></h1>
+            </div>
+            <button id="reader-favorite" class="favorite-button reader-favorite" type="button"></button>
+          </div>
+          <div class="reader-toolbar">
+            <span id="reader-key" class="key-badge"></span>
+            <div class="font-controls" aria-label="Tamanho da letra">
+              <button id="font-decrease" type="button" aria-label="Diminuir tamanho da letra">A-</button>
+              <output id="font-size" for="font-decrease font-increase"></output>
+              <button id="font-increase" type="button" aria-label="Aumentar tamanho da letra">A+</button>
+            </div>
+            <button class="chords-placeholder" type="button" disabled>Cifras</button>
+          </div>
+        </header>
+        <article class="reader-content">
+          <div id="lyrics" class="lyrics"></div>
+          <dl id="song-metadata" class="song-metadata" hidden></dl>
+        </article>
+      </section>
+    </main>
+
+    <footer class="site-footer">CANTUS <span aria-hidden="true">·</span> Hinário digital</footer>
+  </body>
+</html>
