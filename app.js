@@ -1,6 +1,13 @@
 const FAVORITES_KEY = "cantus-favoritos";
 const FONT_SIZE_KEY = "cantus-tamanho-letra";
+const THEME_KEY = "cantus-tema";
 const DATA_URL = "data/hinario.json";
+const THEMES = ["claro", "escuro", "alto-contraste"];
+const THEME_LABELS = {
+  claro: "Claro",
+  escuro: "Escuro",
+  "alto-contraste": "Alto contraste",
+};
 const DEFAULT_FONT_SIZE = 20;
 const MIN_FONT_SIZE = 16;
 const MAX_FONT_SIZE = 30;
@@ -26,6 +33,7 @@ const elements = {
   fontDecrease: document.querySelector("#font-decrease"),
   fontIncrease: document.querySelector("#font-increase"),
   fontSize: document.querySelector("#font-size"),
+  themeToggles: [...document.querySelectorAll("[data-theme-toggle]")],
 };
 
 let songs = [];
@@ -33,6 +41,7 @@ let favoriteNumbers = new Set();
 let activeSection = "todos";
 let currentSong = null;
 let fontSize = DEFAULT_FONT_SIZE;
+let currentTheme = "claro";
 
 function normalize(value) {
   return String(value ?? "")
@@ -45,6 +54,53 @@ function normalize(value) {
 function setStatus(message, isError = false) {
   elements.status.textContent = message;
   elements.status.classList.toggle("is-error", isError);
+}
+
+function updateTheme(theme) {
+  currentTheme = theme;
+  document.documentElement.dataset.theme = theme;
+  const nextTheme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
+  const icons = {
+    claro: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>',
+    escuro: '<svg viewBox="0 0 24 24"><path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z"/></svg>',
+    "alto-contraste": '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18a9 9 0 0 0 0-18Z"/></svg>',
+  };
+  for (const button of elements.themeToggles) {
+    button.querySelector(".theme-icon").innerHTML = icons[theme];
+    button.querySelector(".theme-label").textContent = THEME_LABELS[theme];
+    button.setAttribute("aria-label", `Tema atual: ${THEME_LABELS[theme]}. Toque para alternar para ${THEME_LABELS[nextTheme]}.`);
+    button.title = `Alternar para ${THEME_LABELS[nextTheme]}`;
+  }
+  const themeColor = document.querySelector('meta[name="theme-color"]');
+  themeColor.content = theme === "escuro" ? "#0f172a" : theme === "alto-contraste" ? "#000000" : "#f6f7f5";
+}
+
+function readTheme() {
+  try {
+    const stored = localStorage.getItem(THEME_KEY);
+    if (stored === null) return "claro";
+    if (THEMES.includes(stored)) return stored;
+    setStatus("O tema salvo não é reconhecido. O modo Claro foi aplicado.", true);
+  } catch {
+    setStatus("O navegador não permitiu ler a preferência de tema.", true);
+  }
+  return "claro";
+}
+
+function setTheme(theme, persist = false) {
+  updateTheme(theme);
+  if (!persist) return;
+  try {
+    localStorage.setItem(THEME_KEY, theme);
+    setStatus("");
+  } catch {
+    setStatus("O tema foi aplicado, mas não foi possível salvar essa preferência.", true);
+  }
+}
+
+function cycleTheme() {
+  const nextTheme = THEMES[(THEMES.indexOf(currentTheme) + 1) % THEMES.length];
+  setTheme(nextTheme, true);
 }
 
 function readFavorites() {
@@ -261,7 +317,9 @@ function getVisibleSongs() {
       ...song.blocos.flatMap((block) => block.linhas),
     ].join(" "));
     return searchableText.includes(query);
-  });
+  }).sort((first, second) =>
+    first.titulo.localeCompare(second.titulo, "pt-BR", { sensitivity: "base" })
+  );
 }
 
 function createFavoriteButton(song) {
@@ -307,10 +365,6 @@ function renderSongs() {
     link.href = `#/musica/${song.numero}`;
     link.setAttribute("aria-label", `Abrir ${song.secao === "hino" ? "hino" : "cântico"} ${String(song.numero).padStart(3, "0")}: ${song.titulo}`);
 
-    const number = document.createElement("span");
-    number.className = "song-number";
-    number.textContent = String(song.numero).padStart(3, "0");
-
     const details = document.createElement("span");
     details.className = "song-details";
     const title = document.createElement("span");
@@ -318,18 +372,11 @@ function renderSongs() {
     title.textContent = song.titulo;
     const meta = document.createElement("span");
     meta.className = "song-meta";
-    const section = document.createElement("span");
-    section.className = "song-section";
-    section.textContent = song.secao === "hino" ? "Hino" : "Cântico";
-    const dot = document.createElement("span");
-    dot.className = "song-dot";
-    dot.setAttribute("aria-hidden", "true");
-    dot.textContent = "·";
     const key = document.createElement("span");
     key.textContent = `Tom ${song.tom || "—"}`;
-    meta.append(section, dot, key);
+    meta.append(key);
     details.append(title, meta);
-    link.append(number, details);
+    link.append(details);
 
     row.append(link, createFavoriteButton(song));
     fragment.append(row);
@@ -375,6 +422,7 @@ elements.readerFavorite.addEventListener("click", () => {
 });
 elements.fontDecrease.addEventListener("click", () => changeFontSize(-FONT_SIZE_STEP));
 elements.fontIncrease.addEventListener("click", () => changeFontSize(FONT_SIZE_STEP));
+elements.themeToggles.forEach((button) => button.addEventListener("click", cycleTheme));
 
 window.addEventListener("hashchange", () => {
   const match = window.location.hash.match(/^#\/musica\/(\d+)$/);
@@ -389,6 +437,15 @@ window.addEventListener("hashchange", () => {
 });
 
 window.addEventListener("storage", (event) => {
+  if (event.key === THEME_KEY || event.key === null) {
+    const storedTheme = event.key === null ? null : event.newValue;
+    const theme = storedTheme === null ? "claro" : storedTheme;
+    if (THEMES.includes(theme)) {
+      updateTheme(theme);
+    } else {
+      setStatus("Não foi possível sincronizar o tema salvo em outra aba.", true);
+    }
+  }
   if (event.key !== FAVORITES_KEY && event.key !== null) return;
   try {
     const stored = JSON.parse(event.newValue || "[]");
@@ -405,6 +462,7 @@ window.addEventListener("storage", (event) => {
 });
 
 async function initialize() {
+  updateTheme(readTheme());
   favoriteNumbers = readFavorites();
   fontSize = readFontSize();
   try {
